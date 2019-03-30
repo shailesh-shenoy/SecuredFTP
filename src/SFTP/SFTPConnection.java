@@ -54,6 +54,26 @@ public class SFTPConnection
 		return sftpReturnValue;
 	}
 	
+	SFTPReturnValue closeConnection()
+	{
+		SFTPReturnValue sftpReturnValue = null;
+		if (this.session != null)
+		{
+			if (this.session.isConnected())
+			{
+				this.session.disconnect();
+				sftpReturnValue = new SFTPReturnValue(true, "Connection closed successfully", "");
+			} else
+			{
+				sftpReturnValue = new SFTPReturnValue(false, "Connection already disconnected/not established", "");
+			}
+		} else
+		{
+			sftpReturnValue = new SFTPReturnValue(false, "Connection does not exist/not initialized", "");
+		}
+		return sftpReturnValue;
+	}
+	
 	public static void main(String args[])
 	{
 		System.out.println("Test SFTP");
@@ -63,16 +83,16 @@ public class SFTPConnection
 				"192.168.0.104 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAIEA53ay302T9H2S4sF3tg25zISIUnxQh/Pv0xqCakHENIRH8A6Nw4P3A62wt6kVpBGhXJjh7w5P5ZUZ872eicianiaJnwKiA/THxtZSxE5dOh2hRVpCLpWerne3izOL9+wN3obfMj0C+rEoglIK3aLiYm6EYBRQ2zgVoidOt2cJ91U=",
 				"test", "Test@123");
 		System.out.println(sftpReturnValue.toString());
-		if (sftpReturnValue.isSuccessful())
+		if (sftpConnection.session != null)
 		{
-			if (sftpConnection.session != null)
-			{
-				System.out.println("session connected? : " + sftpConnection.session.isConnected());
-				sftpConnection.session.disconnect();
-				System.out.println("session connected? : " + sftpConnection.session.isConnected());
-			}
+			System.out.println("session connected? : " + sftpConnection.session.isConnected());
 		}
-		
+		sftpReturnValue = sftpConnection.closeConnection();
+		if (sftpConnection.session != null)
+		{
+			System.out.println("session connected? : " + sftpConnection.session.isConnected());
+		}
+		System.out.println(sftpReturnValue);
 	}
 	
 }
