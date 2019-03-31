@@ -49,8 +49,8 @@ public class SFTPConnection
 			StringWriter sw = new StringWriter();
 			PrintWriter pw = new PrintWriter(sw);
 			e.printStackTrace(pw);
-			String stackTrace = sw.toString();
 			pw.close();
+			String stackTrace = sw.toString();
 			
 			sftpReturnValue = new SFTPReturnValue(false, "Could not establish connection: " + e.getLocalizedMessage(),
 					stackTrace);
@@ -90,24 +90,34 @@ public class SFTPConnection
 		return sftpReturnValue;
 	}
 	
-	SFTPReturnValue downloadViaSFTP(String uploadFromPath, String uploadToPath)
+	SFTPReturnValue downloadViaSFTP(String downloadFromPath, String downloadToPath)
 	{
 		SFTPReturnValue sftpReturnValue = null;
 		
 		// if session exists
-		if (this.session == null)
+		if (this.sftpChannel == null)
 		{
 			sftpReturnValue = new SFTPReturnValue(false, "Connection not established, create connection first", "");
 		} else
 		{
-			if (this.session.isConnected())
+			if (this.sftpChannel.isConnected())
 			{
 				try
 				{
-					
+					this.sftpChannel.get(downloadFromPath, downloadToPath);
+					sftpReturnValue = new SFTPReturnValue(true, "File downloaded successfully from remote path: "
+							+ downloadFromPath + " to local path: " + downloadToPath, "");
 				} catch (Exception e)
 				{
+					// get stackTrace as string
+					StringWriter sw = new StringWriter();
+					PrintWriter pw = new PrintWriter(sw);
+					e.printStackTrace(pw);
+					pw.close();
+					String stackTrace = sw.toString();
 					
+					sftpReturnValue = new SFTPReturnValue(false, "Download failed: " + e.getLocalizedMessage(),
+							stackTrace);
 				}
 			} else
 			{
@@ -124,7 +134,9 @@ public class SFTPConnection
 		System.out.println("Test SFTP");
 		System.out.println();
 		SFTPConnection sftpConnection = new SFTPConnection();
-		SFTPReturnValue sftpReturnValue = sftpConnection.createConnection("192.168.0.104", 22,
+		SFTPReturnValue sftpReturnValue = null;
+		
+		sftpReturnValue = sftpConnection.createConnection("192.168.0.104", 22,
 				"192.168.0.104 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAIEA53ay302T9H2S4sF3tg25zISIUnxQh/Pv0xqCakHENIRH8A6Nw4P3A62wt6kVpBGhXJjh7w5P5ZUZ872eicianiaJnwKiA/THxtZSxE5dOh2hRVpCLpWerne3izOL9+wN3obfMj0C+rEoglIK3aLiYm6EYBRQ2zgVoidOt2cJ91U=",
 				"test", "Test@123");
 		System.out.println("Create Connection: \n" + sftpReturnValue);
@@ -133,6 +145,8 @@ public class SFTPConnection
 		if (sftpConnection.sftpChannel != null)
 			System.out.println("channel connected? : " + sftpConnection.sftpChannel.isConnected());
 		
+		sftpReturnValue = sftpConnection.downloadViaSFTP("/downloads/*.txt", "D:\\sftp\\multiple\\");
+		System.out.println("Download File: \n" + sftpReturnValue);
 		sftpReturnValue = sftpConnection.closeConnection();
 		if (sftpConnection.session != null)
 			System.out.println("session connected? : " + sftpConnection.session.isConnected());
