@@ -1,7 +1,13 @@
 package SFTP;
 
-public class SFTPReturnValue
+import java.io.Serializable;
+
+public class SFTPReturnValue implements Serializable
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	boolean successful;
 	String returnMessage;
 	String stackTrace;

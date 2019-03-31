@@ -2,14 +2,19 @@ package SFTP;
 
 import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.StringWriter;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
-public class SFTPConnection
+public class SFTPConnection implements Serializable
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	String host;
 	int port;
 	String hostKey;
