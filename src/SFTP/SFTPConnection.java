@@ -129,6 +129,45 @@ public class SFTPConnection
 		
 	}
 	
+	SFTPReturnValue uploadViaSFTP(String uploadFromPath, String uploadToPath)
+	{
+		SFTPReturnValue sftpReturnValue = null;
+		
+		// if session exists
+		if (this.sftpChannel == null)
+		{
+			sftpReturnValue = new SFTPReturnValue(false, "Connection not established, create connection first", "");
+		} else
+		{
+			if (this.sftpChannel.isConnected())
+			{
+				try
+				{
+					this.sftpChannel.put(uploadFromPath, uploadToPath);
+					sftpReturnValue = new SFTPReturnValue(true, "File uploaded successfully from local path: "
+							+ uploadFromPath + " to remote path: " + uploadToPath, "");
+				} catch (Exception e)
+				{
+					// get stackTrace as string
+					StringWriter sw = new StringWriter();
+					PrintWriter pw = new PrintWriter(sw);
+					e.printStackTrace(pw);
+					pw.close();
+					String stackTrace = sw.toString();
+					
+					sftpReturnValue = new SFTPReturnValue(false, "Upload failed: " + e.getLocalizedMessage(),
+							stackTrace);
+				}
+			} else
+			{
+				sftpReturnValue = new SFTPReturnValue(false, "Session disconnected, reconnect to server", "");
+			}
+		}
+		
+		return sftpReturnValue;
+		
+	}
+	
 	public static void main(String args[])
 	{
 		System.out.println("Test SFTP");
@@ -145,8 +184,11 @@ public class SFTPConnection
 		if (sftpConnection.sftpChannel != null)
 			System.out.println("channel connected? : " + sftpConnection.sftpChannel.isConnected());
 		
-		sftpReturnValue = sftpConnection.downloadViaSFTP("/downloads/*.txt", "D:\\sftp\\multiple\\");
-		System.out.println("Download File: \n" + sftpReturnValue);
+//		sftpReturnValue = sftpConnection.downloadViaSFTP("/downloads/*.txt", "D:\\sftp\\multiple\\");
+//		System.out.println("Download File: \n" + sftpReturnValue);
+			
+		sftpReturnValue = sftpConnection.uploadViaSFTP("D:\\sftp\\uploadFile.txt", "/uploads/");
+		System.out.println("Upload File: \n" + sftpReturnValue);
 		sftpReturnValue = sftpConnection.closeConnection();
 		if (sftpConnection.session != null)
 			System.out.println("session connected? : " + sftpConnection.session.isConnected());
