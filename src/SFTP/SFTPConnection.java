@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
@@ -16,6 +17,7 @@ public class SFTPConnection
 	String password;
 	JSch sftpClient;
 	Session session;
+	ChannelSftp sftpChannel;
 	
 	SFTPReturnValue createConnection(String host, int port, String hostKey, String user, String password)
 	{
@@ -28,11 +30,18 @@ public class SFTPConnection
 			this.user = user;
 			this.password = password;
 			this.sftpClient = new JSch();
-			sftpClient.setKnownHosts(new ByteArrayInputStream(this.hostKey.getBytes()));
+			// Public key check
+			this.sftpClient.setKnownHosts(new ByteArrayInputStream(this.hostKey.getBytes()));
+			// Create session
 			this.session = sftpClient.getSession(this.user, this.host, this.port);
 			this.session.setPassword(this.password);
 			this.session.setConfig("StrictHostKeyChecking", "yes");
+			// Connect to session
 			this.session.connect();
+			// Create sftp channel
+			this.sftpChannel = (ChannelSftp) this.session.openChannel("sftp");
+			// Connect to open channel
+			this.sftpChannel.connect();
 			sftpReturnValue = new SFTPReturnValue(true, "Connection established successfully", "");
 		} catch (Exception e)
 		{
@@ -45,10 +54,16 @@ public class SFTPConnection
 			
 			sftpReturnValue = new SFTPReturnValue(false, "Could not establish connection: " + e.getLocalizedMessage(),
 					stackTrace);
-		} finally
-		{
+			
+			// Terminate sessions not created successfully
 			if (this.session != null)
-				System.out.println("session connected? : " + this.session.isConnected());
+			{
+				if (this.session.isConnected())
+				{
+					this.session.disconnect();
+					System.out.println("Session terminated");
+				}
+			}
 		}
 		
 		return sftpReturnValue;
@@ -57,10 +72,11 @@ public class SFTPConnection
 	SFTPReturnValue closeConnection()
 	{
 		SFTPReturnValue sftpReturnValue = null;
-		if (this.session != null)
+		if (this.sftpChannel != null)
 		{
-			if (this.session.isConnected())
+			if (this.sftpChannel.isConnected() || this.session.isConnected())
 			{
+				this.sftpChannel.disconnect();
 				this.session.disconnect();
 				sftpReturnValue = new SFTPReturnValue(true, "Connection closed successfully", "");
 			} else
@@ -74,6 +90,35 @@ public class SFTPConnection
 		return sftpReturnValue;
 	}
 	
+	SFTPReturnValue downloadViaSFTP(String uploadFromPath, String uploadToPath)
+	{
+		SFTPReturnValue sftpReturnValue = null;
+		
+		// if session exists
+		if (this.session == null)
+		{
+			sftpReturnValue = new SFTPReturnValue(false, "Connection not established, create connection first", "");
+		} else
+		{
+			if (this.session.isConnected())
+			{
+				try
+				{
+					
+				} catch (Exception e)
+				{
+					
+				}
+			} else
+			{
+				sftpReturnValue = new SFTPReturnValue(false, "Session disconnected, reconnect to server", "");
+			}
+		}
+		
+		return sftpReturnValue;
+		
+	}
+	
 	public static void main(String args[])
 	{
 		System.out.println("Test SFTP");
@@ -82,17 +127,18 @@ public class SFTPConnection
 		SFTPReturnValue sftpReturnValue = sftpConnection.createConnection("192.168.0.104", 22,
 				"192.168.0.104 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAIEA53ay302T9H2S4sF3tg25zISIUnxQh/Pv0xqCakHENIRH8A6Nw4P3A62wt6kVpBGhXJjh7w5P5ZUZ872eicianiaJnwKiA/THxtZSxE5dOh2hRVpCLpWerne3izOL9+wN3obfMj0C+rEoglIK3aLiYm6EYBRQ2zgVoidOt2cJ91U=",
 				"test", "Test@123");
-		System.out.println(sftpReturnValue.toString());
+		System.out.println("Create Connection: \n" + sftpReturnValue);
 		if (sftpConnection.session != null)
-		{
 			System.out.println("session connected? : " + sftpConnection.session.isConnected());
-		}
+		if (sftpConnection.sftpChannel != null)
+			System.out.println("channel connected? : " + sftpConnection.sftpChannel.isConnected());
+		
 		sftpReturnValue = sftpConnection.closeConnection();
 		if (sftpConnection.session != null)
-		{
 			System.out.println("session connected? : " + sftpConnection.session.isConnected());
-		}
-		System.out.println(sftpReturnValue);
+		if (sftpConnection.sftpChannel != null)
+			System.out.println("channel connected? : " + sftpConnection.sftpChannel.isConnected());
+		System.out.println("Close connection: \n" + sftpReturnValue);
 	}
 	
 }
